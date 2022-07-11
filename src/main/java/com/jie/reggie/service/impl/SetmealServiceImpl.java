@@ -48,6 +48,7 @@ public class SetmealServiceImpl extends ServiceImpl<SetmealMapper, Setmeal>
      * @param ids
      */
     @Override
+    @Transactional//多表操作(全成功或全失败)
     public void removeWithDish(List<Long> ids) {
         //select count(*) from setmeal where id in (1,2,3) and status = 1;
         //查询套餐状态，确定是否可用删除
