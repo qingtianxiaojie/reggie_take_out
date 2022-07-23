@@ -3,6 +3,7 @@ package com.jie.reggie.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jie.reggie.common.CustomException;
 import com.jie.reggie.domain.Dish;
 import com.jie.reggie.domain.DishFlavor;
 import com.jie.reggie.dto.DishDto;
@@ -26,6 +27,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>
 
     @Autowired
     private DishFlavorService dishFlavorService;
+
+    @Autowired
+    private DishService dishService;
     /**
      * 新增菜品，同时保存口味数据
      * @param dishDto
@@ -65,6 +69,10 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>
         return dishDto;
     }
 
+    /**
+     *     //更新菜品信息和口味信息
+     * @param dishDto
+     */
     @Override
     @Transactional//开启事务控制(多张表处理)
     public void updateWithFlavor(DishDto dishDto) {
@@ -82,5 +90,29 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish>
             return item;
         }).collect(Collectors.toList());
         dishFlavorService.saveBatch(flavors);
+    }
+
+    /**
+     * 删除菜品和口味信息
+     * @param ids
+     */
+    @Override
+    @Transactional//开启事务控制(多张表处理)
+    public void deleteWithFlavor(List<Long> ids) {
+        for (Long id : ids){
+            //删除菜品
+            LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Dish::getId,id);
+            Dish dish = dishService.getOne(queryWrapper);
+            if (dish.getStatus() == 0){
+                this.dishService.remove(queryWrapper);
+            }else {
+                throw new CustomException("删除菜品中有正在售卖的菜品，无法全部删除");
+            }
+            //删除口味信息表
+            LambdaQueryWrapper<DishFlavor> queryWrapperFlavor = new LambdaQueryWrapper<>();
+            queryWrapperFlavor.eq(DishFlavor::getDishId,id);
+            this.dishFlavorService.remove(queryWrapperFlavor);
+        }
     }
 }

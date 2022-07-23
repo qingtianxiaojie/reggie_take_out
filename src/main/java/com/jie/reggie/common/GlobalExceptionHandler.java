@@ -40,9 +40,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class) //拦截这类异常
     public R<String> exceptionHandler(CustomException ex){
         log.error(ex.getMessage());
-
         return R.error(ex.getMessage());
-
     }
 
 }

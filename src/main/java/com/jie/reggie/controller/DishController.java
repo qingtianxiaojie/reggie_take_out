@@ -6,20 +6,17 @@ import com.jie.reggie.common.R;
 import com.jie.reggie.domain.Category;
 import com.jie.reggie.domain.Dish;
 import com.jie.reggie.domain.DishFlavor;
-import com.jie.reggie.domain.Employee;
 import com.jie.reggie.dto.DishDto;
 import com.jie.reggie.service.CategoryService;
 import com.jie.reggie.service.DishFlavorService;
 import com.jie.reggie.service.DishService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -41,7 +38,6 @@ public class DishController {
 
     @Autowired
     private RedisTemplate redisTemplate;
-
 
     /**
      * 新增菜品
@@ -100,7 +96,7 @@ public class DishController {
     }
 
     /**
-     * 根据id查询修改菜品
+     * 根据id查询需要修改菜品
      * @param id
      * @return
      */
@@ -111,7 +107,7 @@ public class DishController {
     }
 
     /**
-     * 修改菜品
+     * 提交需要修改菜品
      * @param dishDto 返回的菜品数据
      * @return
      */
@@ -126,6 +122,34 @@ public class DishController {
         String key = "dish_" + dishDto.getCategoryId() + "_1";
         redisTemplate.delete(key);
         return R.success("修改菜品成功");
+    }
+
+    /**
+     * 停售或启售菜品
+     * @param status
+     * @param ids
+     * @return
+     */
+    @PostMapping("/status/{status}")
+    public R<String> status(@PathVariable("status") Integer status,@RequestParam List<Long> ids) {
+        for (Long id : ids) {
+            Dish dish = new Dish();
+            dish.setId(id);
+            dish.setStatus(status);
+            dishService.updateById(dish);
+        }
+        return R.success("修改成功");
+    }
+
+    /**
+     * 删除菜品
+     * @param ids
+     * @return
+     */
+    @DeleteMapping
+    public R<String> delete(@RequestParam List<Long> ids){
+        dishService.deleteWithFlavor(ids);
+        return R.success("删除成功");
     }
 
 /*    *//**
@@ -175,6 +199,7 @@ public class DishController {
         queryWrapper.orderByDesc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
 
         List<Dish> list = dishService.list(queryWrapper);
+
         //更新：添加手机端展示口味的功能
         dishDtoList = list.stream().map((item) -> { //stream流处理list
             DishDto dishDto = new DishDto();//存贮数据
